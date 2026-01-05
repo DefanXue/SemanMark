@@ -1,0 +1,29 @@
+{
+  "strategy_name": "strategy_6_adaptive",
+  "description": "自适应方向生成器：根据代码嵌入动态生成最优投影方向",
+  "dimension_selection": {
+    "method": "adaptive_learned",
+    "k": 4
+  },
+  "direction_generation": {
+    "d": 768,
+    "k": 4
+  },
+  "learning": {
+    "num_variants_per_code": 100,
+    "epochs": 100,
+    "batch_size": 4,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "threshold_quantile": 0.6,
+    "hidden_dims": [512, 256],
+    "use_attention": true,
+    "loss_weights": {
+      "sign_variants": 5.0,
+      "compactness": 0,
+      "separation": 0,
+      "orthogonality": 1.0,
+      "attention_sparsity": 0.1
+    }
+  }
+}

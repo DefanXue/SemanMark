@@ -1,0 +1,48 @@
+{
+  "dataset": {
+    "name": "csn-js",
+    "paths": {
+      "csn-js": {
+        "train": "D:\\kyl410\\XDF\\SrcMarker-main\\contrastive_learning\\datasets\\csn_js\\train_filtered_code.jsonl",
+        "test": "D:\\kyl410\\XDF\\SrcMarker-main\\contrastive_learning\\datasets\\csn_js\\test_filtered_code.jsonl"
+      }
+    }
+  },
+  "model_dir": "D:\\kyl410\\XDF\\Watermark4code\\best_model_js\\best_model",
+  "num_test_codes": 30,
+  "start_index": 0,
+  "sample_method": "sequential",
+  "data_split": {
+    "enabled": true,
+    "strategy_5_training": {
+      "num_codes": 600,
+      "start_index": 0
+    },
+    "embedding_and_testing": {
+      "num_codes": 30,
+      "start_index": 0
+    }
+  },
+  "embedding": {
+    "bits": [1, 1, 0, 0],
+    "K": 10,
+    "max_iters": 120,
+    "num_workers": 16,
+    "batch_size_for_parallel": 4,
+    "quantile": 1.0,
+    "secret": "XDF",
+    "cluster_variants": 80
+  },
+  "dimension_analysis": {
+    "num_variants": 100,
+    "num_attacks_per_code": 50,
+    "num_attacks_per_variant": 50,
+    "num_extreme_variants": 20,
+    "attack_strategy": "random"
+  },
+  "extraction": {
+    "attack_ratios": [0.0, 0.25, 0.5, 0.75, 1.0],
+    "num_seeds_per_ratio": 10
+  }
+}
+
