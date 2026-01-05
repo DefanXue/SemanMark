@@ -1,4 +1,4 @@
-# SemanMark: Semantic Watermarking Framework
+﻿# SemanMark: Semantic Watermarking Framework
 
 A framework for code watermarking using Adaptive Direction Generators (ADG) for robust semantic watermark embedding in source code.
 
@@ -164,48 +164,3 @@ Options:
   --verbose                 Enable verbose output
   --test-mode               Quick test mode with fewer samples
 ```
-
-### Batch Files
-
-- **run_background.bat**: Java watermarking with default settings
-- **run_background_js.bat**: JavaScript watermarking
-
-## Output Files
-
-Results are saved in `dimension_strategy_comparison/results/strategy_6_adaptive*/`:
-
-- **trained_generator.pth**: Trained ADG model weights
-- **selected_dimensions.json**: Chosen embedding dimensions and directions
-- **embedded_watermarks.json**: Watermark embedding results for each sample
-- **extraction_results.json**: Attack robustness evaluation results
-- **test_report.json**: Complete evaluation report with metrics
-
-## Troubleshooting
-
-### Common Issues
-
-1. **CUDA out of memory**
-   - Solution: Reduce --concurrency parameter
-   - Example: python test_strategy6_pipeline.py --concurrency 2
-
-2. **Missing dependencies**
-   - Solution: Install all requirements
-   - Command: pip install -r requirements.txt
-
-3. **Path issues**
-   - Solution: Run from project root directory
-   - Ensure data files exist in expected locations
-
-4. **Model download timeout**
-   - Solution: Ensure stable internet connection for first run
-   - Pre-trained models will be downloaded automatically
-
-### Performance Tuning
-
-- **GPU Memory**: Adjust batch sizes in config files
-- **CPU Cores**: Set --concurrency based on your system (2-16)
-- **Dataset Size**: Use --test-mode for quick validation
-
-## License
-
-MIT License
