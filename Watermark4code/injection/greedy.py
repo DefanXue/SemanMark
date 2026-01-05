@@ -19,7 +19,7 @@ def select_and_inject(
     anchor_code: str,
     bits: List[int],
     required_delta,
-    secret_key: str = "XDF",
+    secret_key: str = "WATERMARK_SECRET",
     K: int = 100,
     max_iters: int = 8,
     num_workers: int = 48,
@@ -33,14 +33,14 @@ def select_and_inject(
     model, tokenizer, device = load_encoder(model_dir, use_quantization=True)
 
     # 使用簇中心作为baseline
-    s0 = np.array(required_delta["s0"], dtype=np.float32)  # 簇中心
+    s0 = np.array(required_delta["s0"], dtype=np.float32)  # 簇中�?
     
     # 计算原始代码的投影和W矩阵
     baseline = compute_baseline(model_dir, anchor_code, secret_key=secret_key)
     s_original = baseline["s0"].astype(np.float32)
     W = baseline["W"].astype(np.float32)
 
-    # 逐位方案：读取4个维度的独立阈值
+    # 逐位方案：读�?个维度的独立阈�?
     bitwise_thresholds = required_delta.get("bitwise_thresholds", {})
     
     if not bitwise_thresholds:
@@ -48,23 +48,23 @@ def select_and_inject(
 
     trace: List[Dict] = []
     current_code = anchor_code
-    current_s = s_original.copy()  # 当前代码的投影
+    current_s = s_original.copy()  # 当前代码的投�?
 
     for it in range(max_iters):
         # 为不同类型生成不同数量的候选：
         # semantic_preserving: 3*K 个（静态规则，成本低）
-        # llm_rewrite: K 个（LLM重写，成本高）
+        # llm_rewrite: K 个（LLM重写，成本高�?
         all_cands = []
         all_types = []
         aug_configs = [
-            ("semantic_preserving", 10 * K),  # 静态规则：3倍候选
+            ("semantic_preserving", 10 * K),  # 静态规则：3倍候�?
             ("llm_rewrite", 0 * K),               # LLM重写：保持原K
         ]
         # 过滤掉k_count=0的配置，避免不必要的调用
         aug_configs = [(aug_type, k_count) for aug_type, k_count in aug_configs if k_count > 0]
         
         if not aug_configs:
-            break  # 没有配置，停止迭代
+            break  # 没有配置，停止迭�?
         
         with ThreadPoolExecutor(max_workers=len(aug_configs)) as ex:
             futs = {
@@ -83,7 +83,7 @@ def select_and_inject(
                     cands = fut.result()
                 except Exception:
                     cands = []
-                # 过滤无变化
+                # 过滤无变�?
                 cands = [c for c in cands if isinstance(c, str) and c.strip() and c.strip() != current_code.strip()]
                 if cands:
                     all_cands.extend(cands)
@@ -98,18 +98,18 @@ def select_and_inject(
         # 逐位打分：计算当前状态和剩余距离（相对于簇中心）
         offset_now = current_s - s0  # [4]，相对于簇中心的偏移
         
-        # 计算每个维度的归一化剩余距离
+        # 计算每个维度的归一化剩余距�?
         normalized_remainders = []
         for i in range(4):
             m_pos = bitwise_thresholds[i]["m_pos"]
             m_neg = bitwise_thresholds[i]["m_neg"]
             
             if bits[i] == 1:
-                # bit=1：目标 offset ≥ m_pos
+                # bit=1：目�?offset �?m_pos
                 remainder = max(m_pos - offset_now[i], 0.0)
                 norm_remainder = remainder / (m_pos + 1e-8)
             else:
-                # bit=0：目标 offset ≤ -m_neg
+                # bit=0：目�?offset �?-m_neg
                 remainder = max(offset_now[i] + m_neg, 0.0)
                 norm_remainder = remainder / (m_neg + 1e-8)
             
@@ -117,7 +117,7 @@ def select_and_inject(
         
         total_normalized_remainder = sum(normalized_remainders) + 1e-8
         
-        # 对每个候选打分
+        # 对每个候选打�?
         scores = np.zeros(len(all_cands), dtype=np.float32)
         
         for cand_idx in range(len(all_cands)):
@@ -129,11 +129,11 @@ def select_and_inject(
                 m_pos = bitwise_thresholds[i]["m_pos"]
                 m_neg = bitwise_thresholds[i]["m_neg"]
                 
-                # 权重：归一化剩余距离占比（距离越远权重越大）
+                # 权重：归一化剩余距离占比（距离越远权重越大�?
                 weight = normalized_remainders[i] / total_normalized_remainder
                 
                 if bits[i] == 1:
-                    # 目标：推正（offset >= m_pos）
+                    # 目标：推正（offset >= m_pos�?
                     offset_after = offset_now[i] + gain[i]
                     
                     if offset_now[i] >= m_pos:
@@ -141,7 +141,7 @@ def select_and_inject(
                         if gain[i] < 0:
                             # 倒退
                             if offset_after >= m_pos:
-                                # 还在安全区，不惩罚
+                                # 还在安全区，不惩�?
                                 score += 0.0
                             else:
                                 # 倒退到阈值以下，惩罚
@@ -157,16 +157,16 @@ def select_and_inject(
                     else:
                         # 情况2：当前未达标
                         if gain[i] > 0:
-                            # 正向推进，根据权重奖励
+                            # 正向推进，根据权重奖�?
                             norm_progress = min(gain[i] / (m_pos + 1e-8), normalized_remainders[i])
                             score += norm_progress * weight * 6.0
                         else:
-                            # 反向倒退，对称惩罚
+                            # 反向倒退，对称惩�?
                             norm_backtrack = abs(gain[i]) / (m_pos + 1e-8)
                             score -= norm_backtrack * weight * 6.0
                 
                 else:
-                    # 目标：推负（offset <= -m_neg）
+                    # 目标：推负（offset <= -m_neg�?
                     offset_after = offset_now[i] + gain[i]
                     
                     if offset_now[i] <= -m_neg:
@@ -174,7 +174,7 @@ def select_and_inject(
                         if gain[i] > 0:
                             # 倒退（正向）
                             if offset_after <= -m_neg:
-                                # 还在安全区，不惩罚
+                                # 还在安全区，不惩�?
                                 score += 0.0
                             else:
                                 # 倒退到阈值以下，惩罚
@@ -190,11 +190,11 @@ def select_and_inject(
                     else:
                         # 情况2：当前未达标
                         if gain[i] < 0:
-                            # 正向推进，根据权重奖励
+                            # 正向推进，根据权重奖�?
                             norm_progress = min(abs(gain[i]) / (m_neg + 1e-8), normalized_remainders[i])
                             score += norm_progress * weight * 6.0
                         else:
-                            # 反向倒退，对称惩罚
+                            # 反向倒退，对称惩�?
                             norm_backtrack = gain[i] / (m_neg + 1e-8)
                             score -= norm_backtrack * weight * 6.0
             
@@ -211,7 +211,7 @@ def select_and_inject(
         except Exception:
             pass
 
-        # 全局选择分数最高且 > 0 的候选
+        # 全局选择分数最高且 > 0 的候�?
         order = np.argsort(-scores)
         best_idx = None
         for idx in order:
@@ -264,8 +264,8 @@ def select_and_inject(
     s_after = current_s
     return {
         "final_code": current_code,
-        "s0": s0.tolist(),  # 簇中心
-        "s_after": s_after.tolist(),  # 最终代码投影
+        "s0": s0.tolist(),  # 簇中�?
+        "s_after": s_after.tolist(),  # 最终代码投�?
         "trace": trace,
     }
 

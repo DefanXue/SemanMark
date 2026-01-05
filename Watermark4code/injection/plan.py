@@ -11,8 +11,7 @@ import tempfile
 from typing import Dict, List, Tuple
 import numpy as np
 
-# 设置临时目录到 D 盘
-tempfile.tempdir = r'D:\temp'
+# 设置临时目录�?D �?tempfile.tempdir = r'D:\temp'
 os.makedirs(tempfile.tempdir, exist_ok=True)
 
 from ..api import load_encoder, compute_baseline_s0
@@ -23,10 +22,10 @@ import sys
 
 
 def _ensure_srcmarker_on_path() -> None:
-    """确保优先解析 XDF/SrcMarker-main 下的 contrastive_learning。"""
+    """确保优先解析 WATERMARK_SECRET/SrcMarker-main 下的 contrastive_learning�?""
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    xdf_root = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
-    srcmarker_root = os.path.join(xdf_root, "SrcMarker-main")
+    WATERMARK_SECRET_root = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+    srcmarker_root = os.path.join(WATERMARK_SECRET_root, "SrcMarker-main")
     if srcmarker_root in sys.path:
         sys.path.remove(srcmarker_root)
     sys.path.insert(0, srcmarker_root)
@@ -35,8 +34,8 @@ def _ensure_srcmarker_on_path() -> None:
 _ensure_srcmarker_on_path()
 
 from contrastive_learning.java_augmentor import generate_java_training_data_parallel  # type: ignore
-# ✅ C++ 和 JavaScript 的导入将在运行时动态导入以避免循环依赖
-# 参见 build_candidates_test_like() 和 build_candidates_by_type() 中的条件导入
+# �?C++ �?JavaScript 的导入将在运行时动态导入以避免循环依赖
+# 参见 build_candidates_test_like() �?build_candidates_by_type() 中的条件导入
 
 
 def _get_quantile_entry(obj: Dict, q: float):
@@ -82,7 +81,7 @@ def compute_required_delta(epsilon_json_path: str, tmargin_json_path: str, quant
     return eps + tm_scalar
 
 
-def compute_baseline(model_dir: str, anchor_code: str, secret_key: str = "XDF") -> Dict:
+def compute_baseline(model_dir: str, anchor_code: str, secret_key: str = "WATERMARK_SECRET") -> Dict:
     base = compute_baseline_s0(model_dir, [anchor_code], secret_key=secret_key)
     return {
         "s0": base["s0"][0],
@@ -104,8 +103,7 @@ def build_candidates_test_like(
     K: int,
     num_workers: int = 48,
     batch_size_for_parallel: int = 20,
-    language: str = None,  # 新增：语言参数（可选，向后兼容）
-) -> Tuple[List[str], Dict]:
+    language: str = None,  # 新增：语言参数（可选，向后兼容�?) -> Tuple[List[str], Dict]:
     """
     Match test-split generation: split_type='test', positive_ratio=1.0, proportions 0.2/0.5/0.3.
     To get K variants, duplicate the same anchor K times as input.
@@ -115,18 +113,15 @@ def build_candidates_test_like(
     
     Returns:
         (cands, stats): 
-            cands - 通过审核的变体列表
-            stats - {"passed_count": int, "failed_reasons": {"原因1": 计数, ...}}
+            cands - 通过审核的变体列�?            stats - {"passed_count": int, "failed_reasons": {"原因1": 计数, ...}}
     """
-    # 确定语言（优先级：参数 > 环境变量 > 默认java）
-    if language is None:
+    # 确定语言（优先级：参�?> 环境变量 > 默认java�?    if language is None:
         language = os.environ.get('WATERMARK_LANGUAGE', 'java')
     
-    # 设置环境变量（供augmentor使用）
-    os.environ['WATERMARK_LANGUAGE'] = language
+    # 设置环境变量（供augmentor使用�?    os.environ['WATERMARK_LANGUAGE'] = language
     
     aug_types = {
-        "semantic_preserving": 1,  # 静态规则 50%
+        "semantic_preserving": 1,  # 静态规�?50%
         "llm_rewrite": 0,           # LLM重写 50%
         "retranslate": 0.0,
     }
@@ -136,12 +131,10 @@ def build_candidates_test_like(
     out_file = os.path.join(out_dir, "augmented.jsonl")
     review_stats_file = os.path.join(out_dir, "review_stats.jsonl")
 
-    # 通过环境变量传递统计文件路径
-    os.environ['REVIEW_STATS_FILE'] = review_stats_file
+    # 通过环境变量传递统计文件路�?    os.environ['REVIEW_STATS_FILE'] = review_stats_file
     
     try:
-        # ✅ 根据语言选择正确的生成函数
-        if language == 'cpp':
+        # �?根据语言选择正确的生成函�?        if language == 'cpp':
             from contrastive_learning.cpp_augmentor import generate_cpp_training_data_parallel  # type: ignore
             generate_cpp_training_data_parallel(
                 input_file=in_file,
@@ -223,7 +216,7 @@ def build_candidates_test_like(
         "failed_reasons": failed_reasons
     }
 
-    # 去重并截取 K
+    # 去重并截�?K
     uniq: List[str] = []
     seen = set()
     for c in cands:
@@ -241,21 +234,17 @@ def build_candidates_by_type(
     aug_type: str,
     num_workers: int = 48,
     batch_size_for_parallel: int = 20,
-    language: str = None,  # 新增：语言参数（可选，向后兼容）
-) -> List[str]:
+    language: str = None,  # 新增：语言参数（可选，向后兼容�?) -> List[str]:
     """
-    仅生成指定类别的等价候选，分布对齐 test-split：positive_ratio=1.0。
-    aug_type ∈ {"semantic_preserving", "llm_rewrite", "retranslate"}
+    仅生成指定类别的等价候选，分布对齐 test-split：positive_ratio=1.0�?    aug_type �?{"semantic_preserving", "llm_rewrite", "retranslate"}
     
     Args:
         language: 编程语言 ('java'/'javascript'/None)，None时从环境变量读取或默认为'java'
     """
-    # 确定语言（优先级：参数 > 环境变量 > 默认java）
-    if language is None:
+    # 确定语言（优先级：参�?> 环境变量 > 默认java�?    if language is None:
         language = os.environ.get('WATERMARK_LANGUAGE', 'java')
     
-    # 设置环境变量（供augmentor使用）
-    os.environ['WATERMARK_LANGUAGE'] = language
+    # 设置环境变量（供augmentor使用�?    os.environ['WATERMARK_LANGUAGE'] = language
     assert aug_type in {"semantic_preserving", "llm_rewrite", "retranslate"}
 
     aug_types = {aug_type: 1.0}
@@ -264,8 +253,7 @@ def build_candidates_by_type(
     out_dir = tempfile.mkdtemp(prefix="wm_aug_type_")
     out_file = os.path.join(out_dir, "augmented.jsonl")
 
-    # ✅ 根据语言选择正确的生成函数
-    if language == 'cpp':
+    # �?根据语言选择正确的生成函�?    if language == 'cpp':
         from contrastive_learning.cpp_augmentor import generate_cpp_training_data_parallel  # type: ignore
         generate_cpp_training_data_parallel(
             input_file=in_file,
@@ -321,7 +309,7 @@ def build_candidates_by_type(
                 if cand and cand != anchor_code.strip():
                     cands.append(cand)
 
-    # 去重并截取 K
+    # 去重并截�?K
     uniq: List[str] = []
     seen = set()
     for c in cands:
@@ -337,7 +325,7 @@ def compute_required_delta_per_anchor(
     model_dir: str,
     anchor_code: str,
     bits: List[int],
-    secret_key: str = "XDF",
+    secret_key: str = "WATERMARK_SECRET",
     K: int = 50,
     quantile: float = 0.90,
     quantized: bool = True,
@@ -347,10 +335,8 @@ def compute_required_delta_per_anchor(
     batch_size_for_parallel: int = 20,
 ) -> Dict:
     """
-    针对单个 anchor，按测试分布生成 K_thr 等价候选，计算所有16种4bit模式的分组阈值。
-    """
-    # 1) 生成候选（门槛由底层生成器负责），阈值估计固定用 50 个样本
-    K_thr = 100
+    针对单个 anchor，按测试分布生成 K_thr 等价候选，计算所�?6�?bit模式的分组阈值�?    """
+    # 1) 生成候选（门槛由底层生成器负责），阈值估计固定用 50 个样�?    K_thr = 100
     try:
         cands, review_stats = build_candidates_test_like(
             anchor_code,
@@ -362,11 +348,9 @@ def compute_required_delta_per_anchor(
         cands = []
         review_stats = {"passed_count": 0, "failed_reasons": {}}
 
-    # 过滤无变化
-    cands = [c for c in cands if isinstance(c, str) and c.strip() and c.strip() != anchor_code.strip()]
+    # 过滤无变�?    cands = [c for c in cands if isinstance(c, str) and c.strip() and c.strip() != anchor_code.strip()]
     if not cands:
-        # 无候选时，返回所有16种bits的零阈值
-        all_bits_patterns = [
+        # 无候选时，返回所�?6种bits的零阈�?        all_bits_patterns = [
             f"{b3}{b2}{b1}{b0}"
             for b3 in [0, 1]
             for b2 in [0, 1]
@@ -390,30 +374,25 @@ def compute_required_delta_per_anchor(
             }
         return {"k": 4, "review_stats": review_stats, "all_bits_thresholds": all_bits_thresholds}
 
-    # 2) 编码并投影
-    model, tokenizer, device = load_encoder(model_dir, use_quantization=quantized)
+    # 2) 编码并投�?    model, tokenizer, device = load_encoder(model_dir, use_quantization=quantized)
     v_anchor = embed_codes(model, tokenizer, [anchor_code], max_length=max_length, batch_size=batch_size, device=device)
     v_cands = embed_codes(model, tokenizer, cands, max_length=max_length, batch_size=batch_size, device=device)
 
     d = v_anchor.shape[1]
     W = derive_directions(secret_key=secret_key, d=int(d), k=4)
-    s_anchor = project_embeddings(v_anchor, W)[0]  # [4] 保留作为参考
-    s_cands = project_embeddings(v_cands, W)       # [K,4]
+    s_anchor = project_embeddings(v_anchor, W)[0]  # [4] 保留作为参�?    s_cands = project_embeddings(v_cands, W)       # [K,4]
 
-    # 3) 计算两种簇中心
-    cluster_centers_median = np.zeros(4)
+    # 3) 计算两种簇中�?    cluster_centers_median = np.zeros(4)
     cluster_centers_balanced = np.zeros(4)
     for i in range(4):
         # 方法1：中位数
         cluster_centers_median[i] = float(np.median(s_cands[:, i]))
         
-        # 方法2：平衡中心（正负半径相等）
-        max_val = float(np.max(s_cands[:, i]))
+        # 方法2：平衡中心（正负半径相等�?        max_val = float(np.max(s_cands[:, i]))
         min_val = float(np.min(s_cands[:, i]))
         cluster_centers_balanced[i] = (max_val + min_val) / 2
     
-    # 默认使用中位数方法
-    cluster_centers = cluster_centers_median
+    # 默认使用中位数方�?    cluster_centers = cluster_centers_median
     
     # 3.5) 找到最接近两种簇中心的变体代码
     distances_median = np.linalg.norm(s_cands - cluster_centers_median, axis=1)
@@ -447,8 +426,7 @@ def compute_required_delta_per_anchor(
             'radius_neg': radius_neg_median,
         }
         
-        # 方法2：平衡中心
-        offsets_balanced = s_cands[:, i] - cluster_centers_balanced[i]
+        # 方法2：平衡中�?        offsets_balanced = s_cands[:, i] - cluster_centers_balanced[i]
         pos_offsets_balanced = [o for o in offsets_balanced if o > 0]
         neg_offsets_balanced = [o for o in offsets_balanced if o < 0]
         
@@ -469,8 +447,7 @@ def compute_required_delta_per_anchor(
     bitwise_thresholds_balanced = {}
     
     for i in range(4):
-        # 方法1：中位数中心的阈值
-        T_pos_offset_median = cluster_info_median[i]['radius_pos'] * quantile
+        # 方法1：中位数中心的阈�?        T_pos_offset_median = cluster_info_median[i]['radius_pos'] * quantile
         T_pos_median = cluster_centers_median[i] + T_pos_offset_median
         T_neg_offset_median = cluster_info_median[i]['radius_neg'] * quantile
         T_neg_median = cluster_centers_median[i] - T_neg_offset_median
@@ -482,8 +459,7 @@ def compute_required_delta_per_anchor(
             "T_neg": T_neg_median,
         }
         
-        # 方法2：平衡中心的阈值
-        T_pos_offset_balanced = cluster_info_balanced[i]['radius_pos'] * quantile
+        # 方法2：平衡中心的阈�?        T_pos_offset_balanced = cluster_info_balanced[i]['radius_pos'] * quantile
         T_pos_balanced = cluster_centers_balanced[i] + T_pos_offset_balanced
         T_neg_offset_balanced = cluster_info_balanced[i]['radius_neg'] * quantile
         T_neg_balanced = cluster_centers_balanced[i] - T_neg_offset_balanced
@@ -505,8 +481,7 @@ def compute_required_delta_per_anchor(
         "median_code": median_code_median,
         "cluster_info": {str(i): cluster_info_median[i] for i in range(4)},
         "bitwise_thresholds": bitwise_thresholds_median,
-        # 方法2：平衡中心
-        "s0_balanced": cluster_centers_balanced.tolist(),
+        # 方法2：平衡中�?        "s0_balanced": cluster_centers_balanced.tolist(),
         "median_code_balanced": median_code_balanced,
         "cluster_info_balanced": {str(i): cluster_info_balanced[i] for i in range(4)},
         "bitwise_thresholds_balanced": bitwise_thresholds_balanced,

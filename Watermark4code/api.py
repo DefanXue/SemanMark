@@ -1,11 +1,7 @@
 """
-顶层 API 封装（第一阶段最小闭环）：
-- 加载模型（默认量化）、批量嵌入
-- 从固定私钥派生 4 个方向
-- 基线/检测投影与判定
+顶层 API 封装（第一阶段最小闭环）�?- 加载模型（默认量化）、批量嵌�?- 从固定私钥派�?4 个方�?- 基线/检测投影与判定
 
-严格复用 contrastive_learning 评测路径：encoder-only、mean 池化、L2 归一化、max_length=512。
-"""
+严格复用 contrastive_learning 评测路径：encoder-only、mean 池化、L2 归一化、max_length=512�?"""
 
 from typing import Dict, List, Tuple
 import os
@@ -18,7 +14,7 @@ try:
     from .keys import derive_directions
     from .utils import project_embeddings, compute_thresholds, detect_bits
 except Exception:
-    # 直接脚本导入的回退（在 Watermark4code 目录内运行 python test.py 时）
+    # 直接脚本导入的回退（在 Watermark4code 目录内运�?python test.py 时）
     import os, sys
     _CUR_DIR = os.path.dirname(os.path.abspath(__file__))
     if _CUR_DIR not in sys.path:
@@ -28,7 +24,7 @@ except Exception:
     from utils.math import project_embeddings, compute_thresholds, detect_bits  # type: ignore
 
 
-DEFAULT_SECRET = "XDF"
+DEFAULT_SECRET = "WATERMARK_SECRET"
 DEFAULT_D = 768
 DEFAULT_K = 4
 DEFAULT_T_MARGIN = 0.10
@@ -36,7 +32,7 @@ DEFAULT_T_MARGIN = 0.10
 
 def load_encoder(model_dir: str, use_quantization: bool = True):
     """
-    包装底层加载，返回 (model, tokenizer, device)
+    包装底层加载，返�?(model, tokenizer, device)
     """
     model, tokenizer = load_best_model(model_dir=model_dir, use_quantization=use_quantization)
     device = next(model.parameters()).device
@@ -53,8 +49,7 @@ def compute_baseline_s0(
 ) -> Dict:
     """
     计算给定代码集合的基线投影：
-    - 返回包含 embeddings, directions, s0 的字典（均为 numpy 数组）
-    """
+    - 返回包含 embeddings, directions, s0 的字典（均为 numpy 数组�?    """
     model, tokenizer, device = load_encoder(model_dir, use_quantization)
     embs = embed_codes(model, tokenizer, codes, max_length=max_length, batch_size=batch_size, device=device)
     dirs = derive_directions(secret_key=secret_key, d=embs.shape[1], k=DEFAULT_K)
@@ -77,8 +72,7 @@ def detect_bits_for_codes(
     batch_size: int = 32,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    对代码计算投影与比特判定：
-    - 返回 (projections, bits)，形状均为 [N,K]
+    对代码计算投影与比特判定�?    - 返回 (projections, bits)，形状均�?[N,K]
     """
     model, tokenizer, device = load_encoder(model_dir, use_quantization)
     embs = embed_codes(model, tokenizer, codes, max_length=max_length, batch_size=batch_size, device=device)
